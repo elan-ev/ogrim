@@ -1,0 +1,12 @@
+[package]
+name = "ogrim"
+version = "0.1.0"
+authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
+edition = "2021"
+
+repository = "https://github.com/elan-ev/ogrim/"
+license = "MIT/Apache-2.0"
+
+
+[dependencies]
+ogrim-macros = { path = "macros" }

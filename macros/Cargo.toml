@@ -1,0 +1,20 @@
+[package]
+name = "ogrim-macros"
+version = "0.0.1"
+authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
+edition = "2021"
+
+description = """
+Helper crate for `ogrim`. Please see the docs of `ogrim` for more information. Do
+not use this crate directly, API stability is not guaranteed!
+"""
+repository = "https://github.com/elan-ev/ogrim/"
+license = "MIT/Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+litrs = "0.4.1"
+proc-macro2 = "1.0.69"
+quote = "1.0.33"
