@@ -1,4 +1,6 @@
-use proc_macro2::{token_stream::IntoIter, TokenStream, TokenTree, Span, Group, Punct, Ident, Delimiter};
+use proc_macro2::{
+    token_stream::IntoIter, TokenStream, TokenTree, Span, Group, Punct, Ident, Delimiter,
+};
 use litrs::StringLit;
 
 use crate::err::{Error, err};
