@@ -27,7 +27,7 @@
 //!
 
 use core::fmt;
-use std::{fmt::Write, matches};
+use std::{fmt::Write, matches, unreachable};
 
 
 
@@ -185,7 +185,7 @@ impl Document {
             Version::V1_1 => "1.1",
         };
 
-        // The XML prolog with encoding as 38 characters long. There will very
+        // The XML prolog with encoding is 38 bytes long. There will very
         // likely be added more to the string, so 64 seems like a good starting
         // point.
         let mut buf = String::with_capacity(64);
@@ -211,7 +211,9 @@ impl Document {
     pub fn attr(&mut self, name: &str, value: &dyn fmt::Display) {
         assert!(is_name(name), "'{name}' is not a valid XML 'Name'");
 
-        wr!(self.buf, r#" {name}="{}""#, EscapedAttrValue(value));
+        wr!(self.buf, r#" {name}=""#);
+        escape_into(&mut self.buf, value, true);
+        self.buf.push('"');
     }
 
     #[doc(hidden)]
@@ -243,7 +245,7 @@ impl Document {
 
     #[doc(hidden)]
     pub fn text(&mut self, text: &dyn fmt::Display) {
-        wr!(self.buf, "{}", EscapedTextValue(text));
+        escape_into(&mut self.buf, text, false);
         self.newline();
     }
 
@@ -315,18 +317,39 @@ fn is_name_char(c: char) -> bool {
     )
 }
 
-struct EscapedAttrValue<'a>(&'a dyn fmt::Display);
-
-impl fmt::Display for EscapedAttrValue<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f) // TODO
-    }
+/// Writes the escaped `v` into `buf`. We do that without temporary heap
+/// allocations via `EscapedWriter`, which is a layer between the
+/// `fmt::Display` logic of `v` and our final buffer.
+fn escape_into(buf: &mut String, v: &dyn fmt::Display, escape_quote: bool) {
+    wr!(EscapedWriter { buf, escape_quote }, "{}", v);
 }
 
-struct EscapedTextValue<'a>(&'a dyn fmt::Display);
+struct EscapedWriter<'a> {
+    buf: &'a mut String,
+    escape_quote: bool,
+}
 
-impl fmt::Display for EscapedTextValue<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f) // TODO
+impl fmt::Write for EscapedWriter<'_> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        // We always use `"` to quote attribute values, so we don't need to
+        // escape `'`. `>` does not necessarily need to be escaped, but it is
+        // strongly recommended.
+        let escape_quote = self.escape_quote;
+        let needs_escape = |c: char| matches!(c, '<' | '>' | '&') || (escape_quote && c == '"');
+
+        let mut remaining = s;
+        while let Some(pos) = remaining.find(needs_escape) {
+            self.buf.push_str(&remaining[..pos]);
+            match remaining.as_bytes()[pos] {
+                b'<' => self.buf.push_str("&lt;"),
+                b'>' => self.buf.push_str("&gt;"),
+                b'&' => self.buf.push_str("&amp;"),
+                b'"' => self.buf.push_str("&quot;"),
+                _ => unreachable!(),
+            }
+            remaining = &remaining[pos + 1..];
+        }
+        self.buf.push_str(remaining);
+        Ok(())
     }
 }
