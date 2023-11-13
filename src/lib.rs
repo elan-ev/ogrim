@@ -20,14 +20,16 @@
 //!     <?xml version="1.0" ?>
 //!     <zoo name="Lorem Ipsum" openingYear={2000 + 13}>
 //!         <cat>{cat_name}</cat>
-//!         <dog>"Barbara"</dog>
+//!         <dog>"Barbara"</>   // omit name of closing tab for convenience
 //!     </zoo>
 //! );
 //!
 //! println!("{}", doc.as_str()); // Print XML
 //! ```
 //!
-//! For more information and examples, see [`xml`].
+//! As you can see, the name of the closing tab can be omitted. This should help
+//! a little bit with XML's verbosity. For more information and examples, see
+//! [`xml`].
 //!
 //! Of course, values are escaped:
 //!
@@ -111,8 +113,8 @@ use std::{fmt::Write, matches, unreachable};
 ///         limit={3 * 10}            // attribute with interpolated Rust expression
 ///     >
 ///         // Text content of elements has to be quoted, i.e. string literals.
-///         <guest age="65">"Peter Lustig"</guest>
-///         <guest age="3">{cat_name}</guest> // Interpolated content from variable
+///         <guest age="65">"Peter Lustig"</>
+///         <guest age="3">{cat_name}</> // Interpolated content from variable
 ///     </guests>
 /// );
 ///

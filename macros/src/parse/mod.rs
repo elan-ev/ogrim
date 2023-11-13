@@ -175,16 +175,20 @@ impl Parse for ast::Element {
 
         let end_span = buf.expect_punct('<')?.span();
         buf.expect_punct('/')?;
-
-        let ending_name: ast::Name = buf.parse()?;
-        if ending_name.0 != name.0 {
-            return Err(err!(@end_span,
-                "end tag '{}' does not match start tag '{}'",
-                ending_name.0,
-                name.0,
-            ));
+        if is_punct(buf.curr()?, '>') {
+            let _ = buf.bump();
+        } else {
+            let ending_name: ast::Name = buf.parse()?;
+            if ending_name.0 != name.0 {
+                return Err(err!(@end_span,
+                    "end tag '{}' does not match start tag '{}'",
+                    ending_name.0,
+                    name.0,
+                ));
+            }
+            buf.expect_punct('>')?;
         }
-        buf.expect_punct('>')?;
+
 
         Ok(Self { name, attrs, children, empty: false })
     }
