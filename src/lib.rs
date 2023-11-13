@@ -19,6 +19,22 @@
 //!
 //! For more information and examples, see [`xml`].
 //!
+//! Of course, values are escaped:
+//!
+//! ```rust
+//! let doc = ogrim::xml!(
+//!     <?xml version="1.0" ?>
+//!     <foo name=r#"a"b<c&d"#>
+//!         "Little Bobby </foo> Tables"
+//!     </foo>
+//! );
+//!
+//! assert_eq!(
+//!     doc.as_str(),
+//!     r#"<?xml version="1.0" encoding="UTF-8"?><foo name="a&quot;b&lt;c&amp;d">Little Bobby &lt;/foo&gt; Tables</foo>"#
+//! );
+//! ```
+//!
 //!
 //! # Limitations and notes
 //!
