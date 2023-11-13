@@ -1,5 +1,15 @@
 //! XML builder macro letting you write XML inside Rust code (similar to `serde_json::json!`).
 //!
+//! This library only builds a string, not some kind of tree representing the
+//! XML document. Thus, you cannot introspect it after building. So this is
+//! just a better `format!` for building XML.
+//!
+//! There are no memory allocations in this library except by the `String` that
+//! is being built. Not even temporarily, not even for escaping values. This
+//! should make it quite speedy and at least as fast as hand written string
+//! building.
+//!
+//!
 //! # Mini example
 //!
 //! ```rust
@@ -38,7 +48,7 @@
 //!
 //! # Limitations and notes
 //!
-//! - This crate only leds you build `UTF-8` encoded XML documents.
+//! - This crate only lets you build `UTF-8` encoded XML documents.
 //! - Text content of nodes has to be quoted (e.g. `<foo>"hello"</foo>` instead
 //!   of `<foo>hello</foo>`).
 //! - Writing *names* (i.e. tag and attribute names) has some special cases. In
@@ -203,10 +213,10 @@ pub use ogrim_macros::xml;
 
 /// A document, potentially still under construction.
 ///
-/// This is little more than just a `String` inside. The only way to create a
-/// value of this type is by using [`xml!`]. That macro can also append to an
-/// existing `Document`. The only thing you can do on a document is get the
-/// string out of it.
+/// This is basically just a `String` inside. The only way to create a value of
+/// this type is by using [`xml!`]. That macro can also append to an existing
+/// `Document`. The only thing you can do on a document is get the string out
+/// of it.
 pub struct Document {
     buf: String,
     depth: u32,
