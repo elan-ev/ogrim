@@ -4,12 +4,31 @@
 [<img alt="Crates.io Version" src="https://img.shields.io/crates/v/ogrim?logo=rust&style=for-the-badge" height="23">](https://crates.io/crates/ogrim)
 [<img alt="docs.rs" src="https://img.shields.io/crates/v/ogrim?color=blue&label=docs&style=for-the-badge" height="23">](https://docs.rs/ogrim)
 
-TODO
+XML builder macro letting you write XML inside Rust code (similar to `serde_json::json!`).
+Features:
 
+- Value interpolation (with escaping of course)
+- Auto close tags for convenience (e.g. `<foo>"body"</>`)
+- Minimal memory allocations (only the `String` being built allocates)
+- Choice between minimized and pretty XML
 
-## Name
+```rust
+use ogrim::xml;
 
-TODO
+let cat_name = "Tony";
+let doc = xml!(
+    <?xml version="1.0" ?>
+    <zoo name="Lorem Ipsum" openingYear={2000 + 13}>
+        <cat>{cat_name}</>
+        <dog>"Barbara"</>
+    </>
+);
+
+println!("{}", doc.as_str()); // Print XML
+```
+
+See [**the documentation**](https://docs.rs/ogrim) for more information and examples.
+
 
 ---
 
