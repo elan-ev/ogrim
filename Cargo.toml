@@ -3,10 +3,21 @@ name = "ogrim"
 version = "0.1.0"
 authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
 edition = "2021"
+rust-version = "1.72" # Likely not required. Latest Rust version on initial release.
 
+description = """
+XML builder macro letting you write literal XML inside your Rust code (similar
+to `serde_json::json!`). Features interpolation, escaping, auto-close tags and
+minimal memory allocations.
+"""
+documentation = "https://docs.rs/ogrim/"
 repository = "https://github.com/elan-ev/ogrim/"
+readme = "README.md"
 license = "MIT/Apache-2.0"
 
+keywords = ["xml", "builder", "macro", "rss"]
+categories = ["encoding", "template-engine", "data-structures"]
+exclude = [".github"]
 
 [dependencies]
 ogrim-macros = { path = "macros" }
