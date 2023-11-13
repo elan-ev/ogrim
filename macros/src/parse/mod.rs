@@ -178,7 +178,11 @@ impl Parse for ast::Element {
 
         let ending_name: ast::Name = buf.parse()?;
         if ending_name.0 != name.0 {
-            return Err(err!(@end_span, "end tag does not match start tag '{}'", name.0));
+            return Err(err!(@end_span,
+                "end tag '{}' does not match start tag '{}'",
+                ending_name.0,
+                name.0,
+            ));
         }
         buf.expect_punct('>')?;
 
@@ -244,6 +248,7 @@ impl Parse for ast::Name {
         // Because of all the weirdness explained above, we allow a single
         // string literal to define the name.
         if let Ok(lit) = StringLit::try_from(buf.curr()?) {
+            let _ = buf.bump();
             return Ok(Self(lit.into_value().into_owned()));
         }
 
@@ -294,8 +299,14 @@ impl Parse for ast::Name {
                         break;
                     }
                 }
+
                 _ => break,
             }
+        }
+
+        if out.is_empty() {
+            let unexpected = buf.curr().unwrap();
+            return Err(err!(@unexpected.span(), "expected name, found {unexpected}"));
         }
 
         Ok(Self(out))
