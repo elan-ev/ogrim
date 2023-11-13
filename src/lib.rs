@@ -41,10 +41,10 @@
 //!     </foo>
 //! );
 //!
-//! assert_eq!(
-//!     doc.as_str(),
-//!     r#"<?xml version="1.0" encoding="UTF-8"?><foo name="a&quot;b&lt;c&amp;d">Little Bobby &lt;/foo&gt; Tables</foo>"#
-//! );
+//! assert_eq!(doc.as_str(), concat!(
+//!     r#"<?xml version="1.0" encoding="UTF-8"?>"#,
+//!     r#"<foo name="a&quot;b&lt;c&amp;d">Little Bobby &lt;/foo&gt; Tables</foo>"#,
+//! ));
 //! ```
 //!
 //!
