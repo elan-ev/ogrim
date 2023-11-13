@@ -178,7 +178,7 @@ impl Parse for ast::Element {
 
         let ending_name: ast::Name = buf.parse()?;
         if ending_name.0 != name.0 {
-            return Err(err!(@end_span, "end tag does not match start tag"));
+            return Err(err!(@end_span, "end tag does not match start tag '{}'", name.0));
         }
         buf.expect_punct('>')?;
 
@@ -188,30 +188,111 @@ impl Parse for ast::Element {
 
 impl Parse for ast::Name {
     fn parse(buf: &mut ParseBuf) -> Result<Self, Error> {
-        use std::fmt::Write;
+        // It is impossible for us to exactly parse XML names, unfortunately:
+        //
+        // For one, some characters allowed in XML names are not part of
+        // XID_Continue (and thus not allowed in Rust idents) and are also not
+        // allowed as punctuation. In other words: those characters just aren't
+        // part of the Rust lexicographical grammar outside of string
+        // literals.
+        //
+        // Further, from Rusts lexicographical grammar and proc macro
+        // perspective, the following inputs are all the same:
+        // - <foo:bar: baz="3">
+        // - <foo:bar :baz="3">
+        // - <foo: bar:baz="3">
+        //
+        // So since we have no knowledge about "spaces" between tokens, we have
+        // to use some custom logic to decide whether additional tokens
+        // are "eaten", i.e. being considered part of the XML name. This
+        // depends on the previous token kind that was eaten. The first token
+        // is always part of the XML name. We distinguish three kinds of tokens:
+        // - ident
+        // - num_lit: float or integer lit
+        // - :-. punctuation
+        //
+        // These three kinds are enough to cover all valid XML names, ignoring
+        // the characters mentioned above. A single `_` is actually parsed as
+        // ident.
+        //
+        // These are the rules to eat the next token or not, depending on the
+        // previous one:
+        //
+        // :-.  :-.          -> eat [^1]
+        // :-.  ident        -> eat: XML names can start with `:-.` and an ident
+        //                           could start a new XML name -> main problem.
+        // :-.  num_lit      -> eat: a num lit always starts with 0-9, but an
+        //                           XML name cannot start like that.
+        // ident  :-.        -> eat [^1]
+        // ident  ident      -> stop: there must be a space between as otherwise
+        //                            it would be parsed as one ident.
+        // ident  num_lit    -> stop: num lit starts with 0-9 but that would
+        //                            still be part of the ident before.
+        // num_lit  :-.      -> eat [^1]
+        // num_lit  ident    -> stop: ident would be part of literal suffix
+        //                            -> thus there is a space.
+        // num_lit  num_lit  -> stop: as far as I can tell, this also can only
+        //                            happen if there is a space.
+        //
+        // [^1]: An XML name is allowed to start with `:`. By using this rule,
+        // we make it impossible to use a leading `:` in an XML name that
+        // follows another XML name.
+        //
+        // So in summary, we stop when a non-punct follows a non-punct.
+        let mut eat_non_punct = true;
+
+        // Because of all the weirdness explained above, we allow a single
+        // string literal to define the name.
+        if let Ok(lit) = StringLit::try_from(buf.curr()?) {
+            return Ok(Self(lit.into_value().into_owned()));
+        }
 
         let mut out = String::new();
-        let mut last_was_ident = false;
         loop {
-            // TODO: Rust's definition of identifier is different from the XML
-            // definition of "word". There are differences with non-ASCII
-            // characters in particular that this code does not address.
             match buf.curr() {
+                // Identifier including _
                 Ok(TokenTree::Ident(i)) => {
-                    // If the last one was an ident then the only reason why it
-                    // was lexed as two idents if there was whitespace between.
-                    // So we will stop.
-                    if last_was_ident {
+                    if !eat_non_punct {
                         break;
                     }
-                    last_was_ident = true;
-                    write!(out, "{i}").unwrap();
+                    eat_non_punct = false;
+                    let s = i.to_string();
+
+                    // There are four characters that are allowed as part of
+                    // Rust literals but that is not allowed in XML names.
+                    let invalid_char = |c| matches!(c, '\u{AA}' | '\u{B5}' | '\u{BA}' | '\u{2054}');
+                    if let Some(p) = s.find(invalid_char) {
+                        return Err(err!(
+                            "Character '{}' is not allowed in XML names",
+                            s[p..].chars().next().unwrap(),
+                        ));
+                    }
+
+                    out.push_str(&s);
                     let _ = buf.bump();
                 }
-                Ok(TokenTree::Punct(p)) if p.as_char() == ':' => {
-                    last_was_ident = false;
-                    let _ = buf.bump();
-                    out.push(':');
+
+                // Numeric literals
+                Ok(TokenTree::Literal(lit)) => {
+                    let s = lit.to_string();
+                    if s.starts_with(|c: char| c.is_digit(10)) {
+                        let _ = buf.bump();
+                        out.push_str(&s);
+                    } else {
+                        break;
+                    }
+                }
+
+                // : . -
+                Ok(TokenTree::Punct(p)) => {
+                    let c = p.as_char();
+                    if c == ':' || (!out.is_empty() && (c == '.' || c == '-')) {
+                        eat_non_punct = true;
+                        let _ = buf.bump();
+                        out.push(c);
+                    } else {
+                        break;
+                    }
                 }
                 _ => break,
             }

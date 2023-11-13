@@ -20,11 +20,48 @@
 //! For more information and examples, see [`xml`].
 //!
 //!
-//! # Limitations
+//! # Limitations and notes
 //!
 //! - This crate only leds you build `UTF-8` encoded XML documents.
-//! - ...
+//! - Text content of nodes has to be quoted (e.g. `<foo>"hello"</foo>` instead
+//!   of `<foo>hello</foo>`).
+//! - Writing *names* (i.e. tag and attribute names) has some special cases. In
+//!   short: if you only use valid ASCII Rust identifiers with `:` in the middle
+//!   of the name (e.g. `atom:link`), you are fine. In other cases, see below or
+//!   just use a string literal: `<"weird3.14exml-name:" />`.
 //!
+//!   <details>
+//!     <summary>The gory details</summary>
+//!
+//!     First, talking about characters beyond ASCII, XML names allow some chars
+//!     that Rust identifiers do not allow. Those are just not part of the Rust
+//!     lexicographical grammar and hence, using a string literal is necessary
+//!     in that case. But you likely won't run into this. For completeness,
+//!     [here are all characters][1] you could legally write in XML names, but
+//!     not in Rust identifiers.
+//!
+//!     Further, `- : .` are all not part of Rust identifier, but instead
+//!     treated by Rust as "puncuation". And Rust macros have no information
+//!     about whitespace at all, so these three inputs are the same:
+//!     - `<foo:bar: baz="3">`
+//!     - `<foo:bar :baz="3">`
+//!     - `<foo: bar:baz="3">`
+//!
+//!     This library uses some best effort guesses to disambiguate this. If you
+//!     don't use `- : .` at the end of an XML name it should work fine.
+//!     Finally, due to these characters being treated as punctuation, digits
+//!     after these puncuations are parsed as numeric literals, which brings a
+//!     whole new bag of weird behavior. For example, `foo:27eels` fails to
+//!     parse as `27e` is parsed as a floating point literal with exponent...
+//!     but the actual exponent is missing.
+//!
+//!     Again: for most normal names, everything should just work. For
+//!     everything else, know these rules or just use a string literal
+//!     instead.
+//!
+//!   </details>
+//!
+//! [1]: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%5BA-Z_%3A%5C-.a-z0-9%5Cu00B7%5Cu00C0-%5Cu00D6%5Cu00D8-%5Cu00F6%5Cu00F8-%5Cu036F%5Cu0370-%5Cu037D%5Cu037F-%5Cu1FFF%5Cu200C-%5Cu200D%5Cu203F-%5Cu2040%5Cu2070-%5Cu218F%5Cu2C00-%5Cu2FEF%5Cu3001-%5CuD7FF%5CuF900-%5CuFDCF%5CuFDF0-%5CuFFFD%5CU00010000-%5CU000EFFFF%5D-%5B%3AXID_Continue%3A%5D%5D&esc=on&g=&i=
 
 use core::fmt;
 use std::{fmt::Write, matches, unreachable};
