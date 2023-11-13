@@ -143,10 +143,11 @@ use std::{fmt::Write, matches, unreachable};
 /// argument. In that case, the macro returns a `Document`.
 ///
 /// ```rust
-/// use ogrim::xml;
+/// use ogrim::{xml, Format};
 ///
 /// let doc = xml!(
-///     #[indentation = "  "]   // Optional: specify meta/formatting attributes
+///     // Optional: specify meta/formatting attributes
+///     #[format = Format::Pretty { indentation: "  " }]
 ///     <?xml version="1.0" encoding="UTF-8" ?>   // XML prolog
 ///     <foo bar="baz">    // root element
 ///         // ...
@@ -156,9 +157,7 @@ use std::{fmt::Write, matches, unreachable};
 /// println!("{}", doc.as_str()); // Print XML
 /// ```
 ///
-/// Currently the only supported meta attribute is `indentation`. If that's
-/// specified, the XML is printed in pretty mode with the specified
-/// indentation. If not specified, terse XML is output.
+/// Currently the only supported meta attribute is `format`. See [`Format`].
 ///
 /// The XML prolog is required. Specifying `encoding` is optional and if
 /// specified, must be `"UTF-8"`.
@@ -330,10 +329,30 @@ pub enum Version {
     V1_1,
 }
 
-#[doc(hidden)]
+/// Specifies how the XML should be formatted.
+///
+/// Pass to [`xml`] like this:
+///
+/// ```
+/// use ogrim::{xml, Format};
+///
+/// let doc = xml!(
+///     #[format = Format::Pretty { indentation: "  " }]
+///     <?xml version="1.0" ?>
+///     <foo></>
+/// );
+/// ```
+///
+/// After `format = ` you can pass any Rust expression, also referencing
+/// variables, for example to make formatting conditional. If not specified,
+/// terse formatting is used.
 pub enum Format {
+    /// Minimized, as short as possible.
     Terse,
+
+    /// Pretty printed for human consumption.
     Pretty {
+        /// String with which to indent, e.g. `"  "`.
         indentation: &'static str,
     },
 }

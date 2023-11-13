@@ -20,10 +20,7 @@ pub(crate) fn emit(input: ast::Input) -> Result<TokenStream, Error> {
             None => quote! { None },
             Some(v) => quote! { Some(#v) },
         };
-        let format = match input.indentation {
-            Some(indent) => quote! { ogrim::Format::Pretty { indentation: #indent } },
-            None => quote! { ogrim::Format::Terse },
-        };
+        let format = input.format.unwrap_or(quote! { ogrim::Format::Terse });
 
 
         quote! {

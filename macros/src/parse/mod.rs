@@ -1,3 +1,5 @@
+use std::iter;
+
 use proc_macro2::{TokenStream, TokenTree, Delimiter};
 use litrs::StringLit;
 
@@ -32,7 +34,7 @@ fn is_punct(tt: &TokenTree, c: char) -> bool {
 impl Parse for ast::Input {
     fn parse(buf: &mut ParseBuf) -> Result<Self, Error> {
         let mut buffer = None;
-        let mut indentation = None;
+        let mut format = None;
 
         loop {
             match buf.curr()? {
@@ -43,10 +45,10 @@ impl Parse for ast::Input {
                     let mut inner = ParseBuf::from_group(g);
                     let key = inner.expect_ident()?;
                     match key.to_string().as_str() {
-                        "indentation" => {
+                        "format" => {
                             let _ = inner.expect_punct('=')?;
-                            let v = inner.expect_string_lit()?;
-                            indentation = Some(v.into_value().into_owned());
+                            let expr = TokenStream::from_iter(iter::from_fn(|| inner.bump().ok()));
+                            format = Some(expr);
                         }
                         other => return Err(err!(
                             @key.span(),
@@ -83,7 +85,7 @@ impl Parse for ast::Input {
 
         Ok(Self {
             buffer,
-            indentation,
+            format,
             prolog,
             root,
         })

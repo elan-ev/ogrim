@@ -5,7 +5,7 @@ use proc_macro2::{TokenStream, Ident};
 #[derive(Debug)]
 pub(crate) struct Input {
     pub(crate) buffer: Option<TokenStream>,
-    pub(crate) indentation: Option<String>,
+    pub(crate) format: Option<TokenStream>,
     pub(crate) prolog: Option<Prolog>,
     pub(crate) root: Element,
 }
