@@ -254,6 +254,22 @@ use std::{fmt::Write, matches, unreachable};
 /// could write `{|doc| make_items(doc).await?}` as long as the outer function
 /// is also async and returns `Result`.
 ///
+/// This also allows you to model optional elements:
+///
+/// ```rust
+/// use ogrim::xml;
+///
+/// let some_condition = true;
+/// let doc = xml!(
+///     <?xml version="1.1" ?>
+///     <foo>
+///         {|doc| if some_condition {
+///             xml!(doc, <bar />);
+///         }}
+///     </>
+/// );
+/// ```
+///
 pub use ogrim_macros::xml;
 
 
