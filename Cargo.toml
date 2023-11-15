@@ -1,6 +1,6 @@
 [package]
 name = "ogrim"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
 edition = "2021"
 rust-version = "1.72" # Likely not required. Latest Rust version on initial release.
@@ -20,4 +20,4 @@ categories = ["encoding", "template-engine", "data-structures"]
 exclude = [".github"]
 
 [dependencies]
-ogrim-macros = { version = "0.0.1", path = "macros" }
+ogrim-macros = { version = "0.0.2", path = "macros" }
