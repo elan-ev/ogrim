@@ -136,6 +136,53 @@ use std::{fmt::Write, matches, unreachable};
 /// your outer function and can use `.await` or `?` as appropriate. See below
 /// for a useful example.
 ///
+/// ## Fill attribute syntax `{..iter}`
+///
+/// You can dynamically add attributes to an element by using the `<foo
+/// {..iter}>` syntax. There, `iter` must be an expression that implements
+/// `IntoIterator<Item = (N, V)>` where `N` and `V` must implement
+/// `fmt::Display`. This allows you to interpolate hash maps or lists,
+/// and also to easily model optional attributes (as `Option` does implement
+/// `IntoIterator`). Examples:
+///
+/// ```rust
+/// use std::{collections::BTreeMap, path::Path};
+/// use ogrim::xml;
+///
+/// let description = Some("Lorem Ipsum");
+/// let map = BTreeMap::from([
+///     ("cat", Path::new("/usr/bin/cat").display()),
+///     ("dog", Path::new("/home/goodboy/image.jpg").display()),
+/// ]);
+///
+/// let doc = xml!(
+///     <?xml version="1.1" ?>
+///     <root
+///         // Optional attributes via `Option`
+///         {..description.map(|v| ("description", v))}
+///         // Can be mixed with normal attributes, retaining source order
+///         bar="green"
+///         // Naturally, maps work as well. Remember that hash map has a random
+///         // iteration order, so consider using `BTreeMap` instead.
+///         {..map}
+///         // Arrays can also be useful, as they also implement `IntoIterator`
+///         {..["Alice", "Bob"].map(|name| (name.to_lowercase(), "invited"))}
+///     >
+///     </>
+/// );
+///
+/// # assert_eq!(doc.as_str(), concat!(
+/// #     r#"<?xml version="1.1" encoding="UTF-8"?>"#,
+/// #     r#"<root description="Lorem Ipsum" bar="green" "#,
+/// #     r#"cat="/usr/bin/cat" dog="/home/goodboy/image.jpg" "#,
+/// #     r#"alice="invited" bob="invited"></root>"#,
+/// # ));
+/// ```
+///
+/// Note: as the attribute names cannot be checked at compile time, the check
+/// has to be performed at runtime. If passed invalid XML names, this will
+/// panic.
+///
 ///
 /// # Create new document (entry point)
 ///
@@ -278,6 +325,28 @@ impl Document {
     }
 
     #[doc(hidden)]
+    pub fn attrs<I, N, V>(&mut self, attrs: I)
+    where
+        I: IntoIterator<Item = (N, V)>,
+        V: fmt::Display,
+        N: fmt::Display,
+    {
+        for (name, value) in attrs {
+            // To check whether the name is valid, we first just write it to the
+            // buffer to avoid temporary heap allocations.
+            let len_before = self.buf.len();
+            wr!(self.buf, r#" {name}=""#);
+            let written_name = &self.buf[len_before + 1..self.buf.len() - 2];
+            if !is_name(written_name) {
+                panic!("attribute name '{written_name}' is not a valid XML name");
+            }
+
+            escape_into(&mut self.buf, &value, true);
+            self.buf.push('"');
+        }
+    }
+
+    #[doc(hidden)]
     pub fn close_start_tag(&mut self) {
         self.buf.push('>');
         self.depth += 1;
@@ -394,3 +463,5 @@ impl fmt::Write for EscapedWriter<'_> {
         Ok(())
     }
 }
+
+include!("../shared.rs");

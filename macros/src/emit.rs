@@ -49,17 +49,26 @@ fn emit_element(elem: &ast::Element) -> TokenStream {
     };
 
 
-    for (name, value) in &elem.attrs {
-        let (span, v) = match value {
-            ast::AttrValue::Literal(s) => (Span::call_site(), quote! { #s }),
-            ast::AttrValue::Expr(e) => (
-                span_of_tokenstream(&e),
-                quote! { (#e) },
-            ),
-        };
-        out.extend(quote_spanned!{span=>
-            buf.attr(#name, &#v);
-        });
+    for attr in &elem.attrs {
+        match attr {
+            ast::Attr::Single(name, value) => {
+                let (span, v) = match value {
+                    ast::AttrValue::Literal(s) => (Span::call_site(), quote! { #s }),
+                    ast::AttrValue::Expr(e) => (
+                        span_of_tokenstream(&e),
+                        quote! { (#e) },
+                    ),
+                };
+                out.extend(quote_spanned!{span=>
+                    buf.attr(#name, &#v);
+                });
+            }
+            ast::Attr::Fill(expr) => {
+                out.extend(quote! {
+                    buf.attrs(#expr);
+                });
+            }
+        }
     }
 
     if elem.empty {

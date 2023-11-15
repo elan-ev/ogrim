@@ -19,9 +19,15 @@ pub(crate) struct Prolog {
 #[derive(Debug)]
 pub(crate) struct Element {
     pub(crate) name: Name,
-    pub(crate) attrs: Vec<(Name, AttrValue)>,
+    pub(crate) attrs: Vec<Attr>,
     pub(crate) children: Vec<Child>,
     pub(crate) empty: bool,
+}
+
+#[derive(Debug)]
+pub(crate) enum Attr {
+    Single(Name, AttrValue),
+    Fill(TokenStream),
 }
 
 #[derive(Debug)]

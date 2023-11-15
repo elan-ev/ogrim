@@ -1,3 +1,5 @@
+use std::iter;
+
 use proc_macro2::{
     token_stream::IntoIter, TokenStream, TokenTree, Span, Group, Punct, Ident, Delimiter,
 };
@@ -96,6 +98,10 @@ impl ParseBuf {
             span: self.span,
             msg: "unexpected end of input".into(),
         }
+    }
+
+    pub(crate) fn collect_rest(mut self) -> TokenStream {
+        TokenStream::from_iter(iter::from_fn(|| self.bump().ok()))
     }
 
     pub(crate) fn parse<T: Parse>(&mut self) -> Result<T, Error> {

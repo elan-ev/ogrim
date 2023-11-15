@@ -8,6 +8,7 @@ XML builder macro letting you write XML inside Rust code (similar to `serde_json
 Features:
 
 - Value interpolation (with escaping of course)
+    - Interpolate lists or optional attributes with `<foo {..iter}>`
 - Auto close tags for convenience (e.g. `<foo>"body"</>`)
 - Minimal memory allocations (only the `String` being built allocates)
 - Choice between minimized and pretty XML

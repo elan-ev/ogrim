@@ -1,6 +1,4 @@
-use std::iter;
-
-use proc_macro2::{TokenStream, TokenTree, Delimiter};
+use proc_macro2::{TokenStream, TokenTree, Delimiter, Spacing};
 use litrs::StringLit;
 
 use crate::{ast, err::{Error, err}};
@@ -47,8 +45,7 @@ impl Parse for ast::Input {
                     match key.to_string().as_str() {
                         "format" => {
                             let _ = inner.expect_punct('=')?;
-                            let expr = TokenStream::from_iter(iter::from_fn(|| inner.bump().ok()));
-                            format = Some(expr);
+                            format = Some(inner.collect_rest());
                         }
                         other => return Err(err!(
                             @key.span(),
@@ -161,11 +158,21 @@ impl Parse for ast::Element {
                         empty: true,
                     })
                 }
+                TokenTree::Group(g) if g.delimiter() == Delimiter::Brace => {
+                    let g = buf.expect_group(Delimiter::Brace)?;
+                    let mut inner = ParseBuf::from_group(g);
+                    let p = inner.expect_punct('.')?;
+                    if p.spacing() == Spacing::Alone {
+                        return Err(err!(@p.span(), "expected '..' but found single '.'"));
+                    }
+                    inner.expect_punct('.')?;
+                    attrs.push(ast::Attr::Fill(inner.collect_rest()));
+                }
                 _ => {
                     let name = buf.parse()?;
                     buf.expect_punct('=')?;
                     let value = buf.parse()?;
-                    attrs.push((name, value));
+                    attrs.push(ast::Attr::Single(name, value));
                 }
             }
         }
@@ -380,43 +387,4 @@ impl Parse for ast::AttrValue {
     }
 }
 
-
-fn is_name(s: &str) -> bool {
-    let mut chars = s.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    is_name_start_char(first) && chars.all(is_name_char)
-}
-
-fn is_name_start_char(c: char) -> bool {
-    matches!(c,
-        ':'
-        | 'A'..='Z'
-        | '_'
-        | 'a'..='z'
-        | '\u{C0}'..='\u{D6}'
-        | '\u{D8}'..='\u{F6}'
-        | '\u{F8}'..='\u{2FF}'
-        | '\u{370}'..='\u{37D}'
-        | '\u{37F}'..='\u{1FFF}'
-        | '\u{200C}'..='\u{200D}'
-        | '\u{2070}'..='\u{218F}'
-        | '\u{2C00}'..='\u{2FEF}'
-        | '\u{3001}'..='\u{D7FF}'
-        | '\u{F900}'..='\u{FDCF}'
-        | '\u{FDF0}'..='\u{FFFD}'
-        | '\u{10000}'..='\u{EFFFF}'
-    )
-}
-
-fn is_name_char(c: char) -> bool {
-    is_name_start_char(c) || matches!(c,
-        '-'
-        | '.'
-        | '0'..='9'
-        | '\u{B7}'
-        | '\u{0300}'..='\u{036F}'
-        | '\u{203F}'..='\u{2040}'
-    )
-}
+include!("../../../shared.rs");
