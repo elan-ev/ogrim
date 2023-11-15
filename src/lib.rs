@@ -480,4 +480,4 @@ impl fmt::Write for EscapedWriter<'_> {
     }
 }
 
-include!("../shared.rs");
+include!("shared.rs");

@@ -387,4 +387,4 @@ impl Parse for ast::AttrValue {
     }
 }
 
-include!("../../../shared.rs");
+include!("../shared.rs");
