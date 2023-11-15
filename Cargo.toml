@@ -20,4 +20,4 @@ categories = ["encoding", "template-engine", "data-structures"]
 exclude = [".github"]
 
 [dependencies]
-ogrim-macros = { version = "0.0.2", path = "macros" }
+ogrim-macros = { version = "=0.0.3", path = "macros" }
